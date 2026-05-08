@@ -18,27 +18,37 @@ module axis_tx #(
     localparam int CNT_W = $clog2(TOTAL + 1);
     localparam int IDX_W = $clog2(N);
 
-    logic [CNT_W - 1: 0] elem_cnt;
-    wire [IDX_W - 1: 0] row, col;
-    assign row = elem_cnt / N;
-    assign col = elem_cnt % N;
+    logic [CNT_W - 1: 0] elemt_cnt;
+    logic [IDX_W - 1: 0] row, col;
 
     typedef enum logic {IDLE, SEND} state_t;
     state_t next_state, state;
 
     always_ff @(posedge clk) begin
         if (!rst_n) begin
-            state <= IDLE;
-            elem_cnt <= '0;
+            state     <= IDLE;
+            elemt_cnt <= '0;
+            row       <= '0;
+            col       <= '0;
         end
         else begin
             state <= next_state;
-            if(m_tvalid && m_tready) begin
-                elem_cnt <= elem_cnt + 1;
+            if (state == IDLE && send) begin
+                elemt_cnt <= '0;
+                row       <= '0;
+                col       <= '0;
             end
-            else if (state == IDLE && send) begin
-                elem_cnt <= '0;
+            else if(m_tvalid && m_tready) begin
+                elemt_cnt <= elemt_cnt + 1;
+                if (col == N - 1) begin
+                    col <= '0;
+                    row <= row + 1;
+                end
+                else begin
+                    col <= col + 1;
+                end
             end
+            
         end
     end
     
@@ -51,7 +61,7 @@ module axis_tx #(
             end
             SEND:    begin
                         m_tvalid = 1'b1;
-                        m_tlast  = (elem_cnt == TOTAL - 1);
+                        m_tlast  = (elemt_cnt == TOTAL - 1);
             end
             default: begin
                         m_tvalid = 1'b0;
@@ -67,7 +77,7 @@ module axis_tx #(
                         if (send) next_state = SEND;
             end
             SEND:    begin
-                        if (m_tvalid && m_tready && elem_cnt == TOTAL - 1) next_state = IDLE;
+                        if (m_tvalid && m_tready && elemt_cnt == TOTAL - 1) next_state = IDLE;
             end
             default: begin  
                         next_state = IDLE;

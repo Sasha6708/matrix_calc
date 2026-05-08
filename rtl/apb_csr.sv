@@ -1,4 +1,4 @@
-module apb_crs #(
+module apb_csr #(
     parameter N      = 4,
     parameter DATA_W = 16
 ) (
