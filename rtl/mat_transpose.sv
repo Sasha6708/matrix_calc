@@ -6,6 +6,7 @@ module mat_transpose #(
     output logic signed [DATA_W - 1: 0] matrix_out [N][N]
 );
 
+//Transpose matrix
 genvar i, j;
 generate
     for (i = 0; i < N; i++) begin

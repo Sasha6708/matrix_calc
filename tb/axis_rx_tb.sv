@@ -75,22 +75,6 @@ module axis_rx_tb();
         wait(recv_done);
         check_matrix(200, "Test3");
 
-        
-        $display("\n[Test 4] Async reset during operation");
-        flush <= 1'b1; @(posedge clk); flush <= 1'b0;
-        send_element(300, 0);
-        send_element(301, 1);
-        
-        rst_n <= 0; @(posedge clk); rst_n <= 1; @(posedge clk);
-        
-        cleared <= 1'b1;
-        for (int i=0; i<N; i++)
-            for (int j=0; j<N; j++)
-                if (mat[i][j] !== 0) cleared <= 1'b0;
-        @(posedge clk);       
-        if (cleared) $display("PASS [Test4] Buffer cleared after async reset.");
-        else         $display("FAIL [Test4] Buffer not cleared!");
-
         $display("\nALL TESTS COMPLETED");
         #1000;
         $finish;

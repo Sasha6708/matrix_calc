@@ -37,6 +37,7 @@ module axis_rx #(
             row         <= '0;
             col         <= '0;
         end
+        //Write by handshake with 2 counters
         else if (s_tvalid && s_tready) begin
             mat[row][col] <= s_tdata;
             if (col == N - 1) begin
@@ -47,7 +48,7 @@ module axis_rx #(
                 col <= col + 1;
             end
             elemr_cnt <= elemr_cnt + 1;
-
+            //In the end signal about finish
             if (elemr_cnt == TOTAL - 1) begin
                 recv_done   <= 1'b1;
             end

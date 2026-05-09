@@ -47,7 +47,6 @@ module mat_transpose_tb();
 
     end
 
-
 task print_matrix(logic signed [DATA_W - 1: 0] matrix [0: N - 1][0: N - 1], input int N);
     for(int i = 0; i < N; i++) begin
         for (int j = 0; j< N; j++) begin

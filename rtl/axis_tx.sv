@@ -5,13 +5,14 @@ module axis_tx #(
     input  logic                     clk,
     input  logic                     rst_n,
     input  logic                     send,
+    input  logic                     m_tready,
     input  logic                     is_scalar,
     input  logic signed [DATA_W-1:0] mat_in [N][N],
     input  logic signed [DATA_W-1:0] scalar_in,
     output logic signed [DATA_W-1:0] m_tdata,
     output logic                     m_tvalid,
     output logic                     m_tlast,
-    input  logic                     m_tready
+    output logic                     done_tx
 );
 
     localparam int TOTAL = N * N;
@@ -21,7 +22,9 @@ module axis_tx #(
     logic [CNT_W - 1: 0] elemt_cnt;
     logic [IDX_W - 1: 0] row, col;
 
-    typedef enum logic {IDLE, SEND} state_t;
+    typedef enum logic {IDLE = 1'b0,
+                        SEND = 1'b1 } state_t;
+                        
     state_t next_state, state;
 
     always_ff @(posedge clk) begin
@@ -30,14 +33,19 @@ module axis_tx #(
             elemt_cnt <= '0;
             row       <= '0;
             col       <= '0;
+            done_tx   <= 1'b0;
         end
         else begin
             state <= next_state;
+
+            //Reset before send
             if (state == IDLE && send) begin
                 elemt_cnt <= '0;
                 row       <= '0;
                 col       <= '0;
             end
+
+            //Write by handshake with 2 counters
             else if(m_tvalid && m_tready) begin
                 elemt_cnt <= elemt_cnt + 1;
                 if (col == N - 1) begin
@@ -48,10 +56,20 @@ module axis_tx #(
                     col <= col + 1;
                 end
             end
+
+            //Sygnal about succesful transfer
+            if (state == SEND && m_tready && m_tlast) begin
+                done_tx <= 1'b1;
+            end
+            else if (state == IDLE) begin
+                done_tx <= 1'b0;
+            end
+
             
         end
     end
     
+    //Logic FSM
     always_comb begin
         m_tdata = mat_in[row][col];
         case (state)
