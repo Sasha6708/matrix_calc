@@ -1,15 +1,16 @@
 class apb_agent;
-    virtual apb_if vif; 
+
+    virtual apb_if apb_vif; 
     apb_driver a_driver;
     apb_monitor a_monitor;
     sv_analisys_port #(apb_seq_item) sap;
     mailbox #(apb_seq_item) seq_item_port;
 
-    function new(virtual apb_if vif);
+    function new(virtual apb_if apb_vif);
         seq_item_port = new();
         sap           = new();
-        a_driver      = new(vif, seq_item_port);
-        a_monitor     = new(vif, sap);
+        a_driver      = new(apb_vif.driver, seq_item_port);
+        a_monitor     = new(apb_vif.monitor, sap);
     endfunction
 
     task run();
@@ -19,8 +20,8 @@ class apb_agent;
         join_none
     endtask
     
-    function subcribe(mailbox #(seq_item_port) mb);
-        sap.subcribe(mb);
+    function subscribe(mailbox #(seq_item_port) mb);
+        sap.subscribe(mb);
     endfunction
 
 endclass

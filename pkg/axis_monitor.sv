@@ -1,21 +1,27 @@
 class axis_monitor #(int N = 4; int DATA_W = 16);
-    virtual axis_if vif;
+
+    virtual axis_if.monitor axis_vif;
     sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap;
 
-    function new(virtual axis_if vif, sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap);
-        this.vif = vif;
+    function new(virtual axis_if.monitor axis_vif, sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap);
+        this.axis_vif = axis_vif;
         this.sap = sap;
     endfunction
 
     task run();
-        axis_seq_item #(N, DATA_W) txn;
-        int valid_count;
-        int k, l;
-        bit collecting;
-
         forever begin
-            @(posedge vif.clk);
-            if(vif.tvalid && vif.tready) begin
+            @(posedge axis_vif.clk);
+            capture_axis_tnx();
+        end
+    endtask
+
+    local task capture_axis_tnx();
+        static axis_seq_item #(N, DATA_W) txn;
+        static int valid_count = 0;
+        static int k = 0;
+        static int l = 0;
+        static bit collecting = 0;
+        if(axis_vif.tvalid && axis_vif.tready) begin
                 if(!collecting) begin
                     collecting = 1;
                     k = 0;
@@ -24,7 +30,7 @@ class axis_monitor #(int N = 4; int DATA_W = 16);
                     txn = new();
                 end
                 if(k < N && l < N) begin
-                    txn.matrix[k][l] = vif.tdata;
+                    txn.matrix[k][l] = axis_vif.tdata;
                     l++;
                     if(l == N) begin
                         l = 0;
@@ -32,15 +38,15 @@ class axis_monitor #(int N = 4; int DATA_W = 16);
                     end
                     valid_count++;
                 end
-                if(vif.tlast) begin
+                if(axis_vif.tlast) begin
                     txn.valid_count = valid_count;
                     sap.write(txn);
                     collecting = 0;
                 end
             end
-            if(!vif.tvalid) begin
+            if(!axis_vif.tvalid) begin
                 collecting = 0;
             end
-        end
     endtask
+
 endclass

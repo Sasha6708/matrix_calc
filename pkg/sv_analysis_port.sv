@@ -1,4 +1,5 @@
 class sv_analysis_port #(type T);
+
     mailbox #(T) subscribers[$];
 
     function void subscribe(mailbox #(T) mb);
@@ -10,4 +11,5 @@ class sv_analysis_port #(type T);
             subscribers[i].put(item.clone());
         end
     endtask
+    
 endclass
