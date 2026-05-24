@@ -8,7 +8,7 @@ class agent #(int N = 4, int DATA_W = 16);
     mailbox #(axis_seq_item #(N, DATA_W))          seq_item_port;
 
     function new(virtual axis_if axis_vif, bit is_active = 1);
-        this.axis_vif       = axis_vif;
+        this.axis_vif  = axis_vif;
         this.is_active = is_active;
         seq_item_port  = new();
         sap            = new();

@@ -273,3 +273,4 @@ module matrix_calc_tb();
         else
             $error("[%0t] CHECK FAILED: %0d errors found", $time, errors);
     endtask
+endmodule

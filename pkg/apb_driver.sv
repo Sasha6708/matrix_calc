@@ -1,10 +1,10 @@
 class apb_driver;
 
-    virtual apb_if.master vif;
+    virtual apb_if.master apb_vif;
     mailbox #(apb_seq_item) seq_item_port;
 
     function new (virtual apb_if.master apb_vif, mailbox #(apb_seq_item) seq_item_port);
-        this.vif           = apb_vif;
+        this.apb_vif           = apb_vif;
         this.seq_item_port = seq_item_port;
     endfunction
 
@@ -18,11 +18,11 @@ class apb_driver;
     endtask
 
     local task reset();
-        vif.psel    = 1'b0;
-        vif.penable = 1'b0;
-        vif.pwrite  = 1'b0;
-        vif.paddr   = 8'h0;
-        vif.pwdata  = 32'h0;
+        apb_vif.psel    = 1'b0;
+        apb_vif.penable = 1'b0;
+        apb_vif.pwrite  = 1'b0;
+        apb_vif.paddr   = 8'h0;
+        apb_vif.pwdata  = 32'h0;
     endtask
 
     local task drive_transaction(apb_seq_item sqtm);

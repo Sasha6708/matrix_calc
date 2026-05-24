@@ -20,9 +20,9 @@ class apb_monitor;
         static apb_seq_item txn;
         if(apb_vif.psel && !apb_vif.penable && !in_transfer) begin //SETUP PHASE
                 in_transfer = 1;
-                txn = new();
-                txn.addr = apb_vif.paddr;
-                txn.write = apb_vif.pwrite;
+                txn         = new();
+                txn.addr    = apb_vif.paddr;
+                txn.write   = apb_vif.pwrite;
                 if(apb_vif.pwrite) begin
                     txn.write_data = apb_vif.pwdata;
                 end
@@ -31,7 +31,7 @@ class apb_monitor;
             if(!txn.write) begin
                 txn.read_data = apb_vif.prdata;
             end               
-            txn.error = apb_vif.pslverr; 
+            txn.error   = apb_vif.pslverr; 
             sap.write(txn);
             in_transfer = 0;
         end

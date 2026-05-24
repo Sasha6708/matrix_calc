@@ -4,7 +4,7 @@ class axis_driver #(int N = 4, int DATA_W = 16);
     mailbox #(axis_seq_item #(N, DATA_W)) seq_item_port;
     
     function new(virtual axis_if.master axis_vif, mailbox #(axis_seq_item #(N, DATA_W)) seq_item_port);
-        this.axis_vif           = axis_vif;
+        this.axis_vif      = axis_vif;
         this.seq_item_port = seq_item_port;
     endfunction
 
