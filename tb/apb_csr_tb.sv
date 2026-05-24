@@ -78,11 +78,11 @@ module apb_csr_tb();
         penable <= 1'b1;
         
         @(posedge clk);
-        rdata   <= prdata;
-        @(posedge clk);
+        rdata   = prdata;
+        
         psel    <= 1'b0;
         penable <= 1'b0;
-
+        @(posedge clk);
     endtask
 
     initial begin

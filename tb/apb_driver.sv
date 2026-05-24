@@ -46,7 +46,6 @@ interface apb_driver (
         @(posedge clk);
         penable <= 1'b1;
         
-        //@(posedge clk); ACCESS phase?
         rdata = prdata;
 
         @(posedge clk);
