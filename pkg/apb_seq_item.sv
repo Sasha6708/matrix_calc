@@ -14,13 +14,13 @@ class apb_seq_item;
         error      = 0;
     endfunction
 
-    function apb_seq_item clone();
-        clone            = new();
-        clone.addr       = this.addr;
-        clone.write_data = this.write_data;
-        clone.write      = this.write;
-        clone.read_data  = this.read_data;
-        clone.error      = this.error;
+    function apb_seq_item clone(output apb_seq_item cloned);
+        cloned            = new();
+        cloned.addr       = this.addr;
+        cloned.write_data = this.write_data;
+        cloned.write      = this.write;
+        cloned.read_data  = this.read_data;
+        cloned.error      = this.error;
     endfunction
 
 endclass

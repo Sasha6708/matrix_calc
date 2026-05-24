@@ -4,7 +4,7 @@ class axis_agent #(int N = 4, int DATA_W = 16);
     bit                                            is_active;
     axis_driver #(N, DATA_W)                       s_driver;
     axis_monitor #(N, DATA_W)                      s_monitor;
-    sv_analysis_port_axis #(axis_seq_item #(N, DATA_W)) sap;
+    sv_analysis_port_axis sap;
     mailbox #(axis_seq_item #(N, DATA_W))          seq_item_port;
 
     function new(virtual axis_if axis_vif, bit is_active = 1);
@@ -12,9 +12,9 @@ class axis_agent #(int N = 4, int DATA_W = 16);
         this.is_active = is_active;
         seq_item_port  = new();
         sap            = new();
-        s_monitor      = new(axis_vif.monitor, sap);
+        s_monitor      = new(axis_vif, sap);
         if(is_active) begin
-            s_driver   = new(axis_vif.master, seq_item_port);
+            s_driver   = new(axis_vif, seq_item_port);
         end
     endfunction
 

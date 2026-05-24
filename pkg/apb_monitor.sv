@@ -1,23 +1,23 @@
 class apb_monitor;
 
-    virtual apb_if.monitor apb_vif;
-    sv_analysis_port_apb #(apb_seq_item) sap;
+    virtual apb_if apb_vif;
+    sv_analysis_port_apb sap;
 
-    function new(virtual apb_if.monitor apb_vif, sv_analysis_port_apb #(apb_seq_item) sap);
+    function new(virtual apb_if apb_vif, sv_analysis_port_apb sap);
         this.apb_vif = apb_vif;
-        this.sap = sap;
+        this.sap     = sap;
     endfunction
 
-    task run()
+    task run(); 
+    apb_seq_item txn;
         forever begin
             @(posedge apb_vif.clk);
-            capture_apb_txn();
-            end
+            capture_apb_txn(txn);
+        end
     endtask
 
-    local task capture_apb_txn();
+    local task capture_apb_txn(apb_seq_item txn);
         static bit in_transfer = 0;
-        static apb_seq_item txn;
         if(apb_vif.psel && !apb_vif.penable && !in_transfer) begin //SETUP PHASE
                 in_transfer = 1;
                 txn         = new();
@@ -31,9 +31,9 @@ class apb_monitor;
             if(!txn.write) begin
                 txn.read_data = apb_vif.prdata;
             end               
-            txn.error   = apb_vif.pslverr; 
+            txn.error      = apb_vif.pslverr; 
             sap.write(txn);
-            in_transfer = 0;
+            in_transfer    = 0;
         end
     endtask
 

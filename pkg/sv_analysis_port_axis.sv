@@ -9,7 +9,7 @@ class sv_analysis_port_axis;
   task write(axis_seq_item item);
     axis_seq_item cloned;
     foreach (subscribers[i]) begin
-      item.clone(cloned);
+      void'(item.clone(cloned));
       subscribers[i].put(cloned);
     end
   endtask

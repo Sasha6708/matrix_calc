@@ -3,14 +3,14 @@ module tb_top;
     bit clk;
     bit rst_n;
 
-    apb_if                            apb_vif(.clk(clk), .rst_n(rst_n));
-    axis_if #(.N(4), .DATA_WIDTH(16)) axis_a_vif(.clk(clk), .rst_n(rst_n));
-    axis_if #(.N(4), .DATA_WIDTH(16)) axis_b_vif(.clk(clk), .rst_n(rst_n));
-    axis_if #(.N(4), .DATA_WIDTH(16)) axis_res_vif(.clk(clk), .rst_n(rst_n));
+    apb_if                        apb_vif(.clk(clk), .rst_n(rst_n));
+    axis_if #(.N(4), .DATA_W(16)) axis_a_vif(.clk(clk), .rst_n(rst_n));
+    axis_if #(.N(4), .DATA_W(16)) axis_b_vif(.clk(clk), .rst_n(rst_n));
+    axis_if #(.N(4), .DATA_W(16)) axis_res_vif(.clk(clk), .rst_n(rst_n));
 
     matrix_calc #(
         .N                  (4                  ),
-        .DATA_WIDTH         (16                 )
+        .DATA_W             (16                 )
     ) dut (
         .clk                (clk                ),
         .rst_n              (rst_n              ),

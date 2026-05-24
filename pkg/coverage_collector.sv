@@ -6,9 +6,9 @@ class coverage_collector #(int N = 4, int DATA_W = 16);
     mailbox #(axis_seq_item #(N, DATA_W)) axis_res_mb;
 
     function new();
-        apb_mb = new();
-        axis_a_mb = new();
-        axis_b_mb = new();
+        apb_mb      = new();
+        axis_a_mb   = new();
+        axis_b_mb   = new();
         axis_res_mb = new();
     endfunction
 
@@ -16,4 +16,7 @@ class coverage_collector #(int N = 4, int DATA_W = 16);
 
     endfunction
 
+    task run();
+
+    endtask
 endclass

@@ -5,6 +5,7 @@ interface axis_if #(
     input bit clk,
     input bit rst_n
     );
+    
     logic [DATA_W - 1: 0] tdata;
     logic                 tvalid;
     logic                 tready;

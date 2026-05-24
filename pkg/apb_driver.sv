@@ -1,10 +1,10 @@
 class apb_driver;
 
-    virtual apb_if.master apb_vif;
+    virtual apb_if apb_vif;
     mailbox #(apb_seq_item) seq_item_port;
 
-    function new (virtual apb_if.master apb_vif, mailbox #(apb_seq_item) seq_item_port);
-        this.apb_vif           = apb_vif;
+    function new (virtual apb_if apb_vif, mailbox #(apb_seq_item) seq_item_port);
+        this.apb_vif       = apb_vif;
         this.seq_item_port = seq_item_port;
     endfunction
 

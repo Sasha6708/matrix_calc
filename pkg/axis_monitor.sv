@@ -1,33 +1,33 @@
 class axis_monitor #(int N = 4, int DATA_W = 16);
 
-    virtual axis_if.monitor axis_vif;
-    sv_analysis_port_axis #(axis_seq_item #(N, DATA_W)) sap;
+    virtual axis_if axis_vif;
+    sv_analysis_port_axis sap;
 
-    function new(virtual axis_if.monitor axis_vif, sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap);
+    function new(virtual axis_if axis_vif, sv_analysis_port_axis sap);
         this.axis_vif = axis_vif;
         this.sap = sap;
     endfunction
 
     task run();
+        axis_seq_item #(N, DATA_W) txn;
         forever begin
             @(posedge axis_vif.clk);
-            capture_axis_tnx();
+            capture_axis_tnx(txn);
         end
     endtask
 
-    local task capture_axis_tnx();
-        static axis_seq_item #(N, DATA_W) txn;
+    local task capture_axis_tnx(axis_seq_item #(N, DATA_W) txn);
         static int valid_count = 0;
-        static int k           = 0;
-        static int l           = 0;
-        static bit collecting  = 0;
+        static int k = 0;
+        static int l = 0;
+        static bit collecting = 0;
         if(axis_vif.tvalid && axis_vif.tready) begin
                 if(!collecting) begin
                     collecting  = 1;
                     k           = 0;
                     l           = 0;
                     valid_count = 0;
-                    txn         = new();
+                    txn = new();
                 end
                 if(k < N && l < N) begin
                     txn.matrix[k][l] = axis_vif.tdata;
@@ -41,11 +41,11 @@ class axis_monitor #(int N = 4, int DATA_W = 16);
                 if(axis_vif.tlast) begin
                     txn.valid_count = valid_count;
                     sap.write(txn);
-                    collecting      = 0;
+                    collecting = 0;
                 end
             end
             if(!axis_vif.tvalid) begin
-                collecting      = 0;
+                collecting = 0;
             end
     endtask
 
