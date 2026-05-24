@@ -1,7 +1,7 @@
 class axis_monitor #(int N = 4, int DATA_W = 16);
 
     virtual axis_if.monitor axis_vif;
-    sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap;
+    sv_analysis_port_axis #(axis_seq_item #(N, DATA_W)) sap;
 
     function new(virtual axis_if.monitor axis_vif, sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap);
         this.axis_vif = axis_vif;

@@ -1,10 +1,10 @@
-class agent #(int N = 4, int DATA_W = 16);
+class axis_agent #(int N = 4, int DATA_W = 16);
 
     virtual axis_if                                axis_vif;
     bit                                            is_active;
     axis_driver #(N, DATA_W)                       s_driver;
     axis_monitor #(N, DATA_W)                      s_monitor;
-    sv_analysis_port #(axis_seq_item #(N, DATA_W)) sap;
+    sv_analysis_port_axis #(axis_seq_item #(N, DATA_W)) sap;
     mailbox #(axis_seq_item #(N, DATA_W))          seq_item_port;
 
     function new(virtual axis_if axis_vif, bit is_active = 1);
@@ -18,7 +18,7 @@ class agent #(int N = 4, int DATA_W = 16);
         end
     endfunction
 
-    function subscribe(mailbox #(seq_item_port #(N, DATA_W)) mb);
+    function subscribe(mailbox #(axis_seq_item #(N, DATA_W)) mb);
         sap.subscribe(mb); 
     endfunction
     

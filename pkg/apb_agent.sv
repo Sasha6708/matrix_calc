@@ -3,7 +3,7 @@ class apb_agent;
     virtual apb_if apb_vif; 
     apb_driver a_driver;
     apb_monitor a_monitor;
-    sv_analisys_port #(apb_seq_item) sap;
+    sv_analysis_port_apb #(apb_seq_item) sap;
     mailbox #(apb_seq_item) seq_item_port;
 
     function new(virtual apb_if apb_vif);
@@ -20,7 +20,7 @@ class apb_agent;
         join_none
     endtask
     
-    function subscribe(mailbox #(seq_item_port) mb);
+    function subscribe(mailbox #(apb_seq_item) mb);
         sap.subscribe(mb);
     endfunction
 

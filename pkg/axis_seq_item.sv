@@ -1,9 +1,9 @@
 class axis_seq_item #(int N = 4, int DATA_W = 16);
 
-    rand int unsigned txn_id;
-    rand bit          tlast;
-    int               valid_count;
-    rand int [DATA_W - 1: 0] matrix [N][N];
+    rand int unsigned               txn_id;
+    rand bit                        tlast;
+    int                             valid_count;
+    rand int signed [DATA_W - 1: 0] matrix [N][N];
 
     constraint range { foreach(matrix[i, j]) 
                     matrix[i, j] inside {[-(2 ** DATA_W - 1) : (2 ** DATA_W - 1)] };

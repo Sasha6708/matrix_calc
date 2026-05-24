@@ -1,9 +1,9 @@
 class apb_monitor;
 
     virtual apb_if.monitor apb_vif;
-    sv_analysis_port #(apb_seq_item) sap;
+    sv_analysis_port_apb #(apb_seq_item) sap;
 
-    function new(virtual apb_if.monitor apb_vif, sv_analysis_port #(apb_seq_item) sap);
+    function new(virtual apb_if.monitor apb_vif, sv_analysis_port_apb #(apb_seq_item) sap);
         this.apb_vif = apb_vif;
         this.sap = sap;
     endfunction
