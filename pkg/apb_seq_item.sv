@@ -5,6 +5,7 @@ class apb_seq_item;
     rand bit [31: 0] read_data;
     rand bit         write;
          bit         error;
+         bit         rst_n = 1;
 
     function new ();
         addr       = '0;
@@ -21,6 +22,7 @@ class apb_seq_item;
         cloned.write      = this.write;
         cloned.read_data  = this.read_data;
         cloned.error      = this.error;
+        cloned.rst_n      = this.rst_n;
     endfunction
 
 endclass

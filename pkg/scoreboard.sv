@@ -22,6 +22,8 @@ class scoreboard #(int N = 4, int DATA_W = 16);
         axis_a_mb   = new();
         axis_b_mb   = new();
         axis_res_mb = new();
+        expected_count = N * N;
+        reset_state();
     endfunction
 
     task run();
@@ -37,6 +39,11 @@ class scoreboard #(int N = 4, int DATA_W = 16);
         apb_seq_item item;
         forever begin
             apb_mb.get(item);
+             if (!item.rst_n) begin
+            reset_state();
+            $display("[SB] 🔄 Reset detected, state cleared");
+            continue;
+        end
             if(item.write && item.addr == 8'h0) begin
                 opp = item.write_data[ 1: 0];
                 cfg_valid = 1;
@@ -97,6 +104,10 @@ class scoreboard #(int N = 4, int DATA_W = 16);
                     $display("FAIL opp = %b mismatch at [%d][%d]: exp = %d, got = %d", opp, err_i, err_j, ref_exp[err_i][err_j], dut_out[err_i][err_j]);
                     fail_cnt++;
                 end
+                cfg_valid = 1'b0;
+                start_received = 1'b0;
+                overflow_expected = 1'b0;
+                elements_received = 0;
             end
             else begin
                 $warning("Result arrived before config/start");
@@ -112,7 +123,7 @@ class scoreboard #(int N = 4, int DATA_W = 16);
                 case(opp)
                     2'b00: begin
                                 temp = ref_a[i][j] + ref_b[i][j];
-                                if(temp > (1 <<(DATA_W - 1)) || temp < -(1 << (DATA_W - 1))) begin
+                                if(temp > ((1 <<(DATA_W - 1)) - 1) || temp < -(1 << (DATA_W - 1))) begin
                                     overflow_expected = 1;
                                 end
                                 else begin
@@ -121,7 +132,7 @@ class scoreboard #(int N = 4, int DATA_W = 16);
                         end
                     2'b01: begin
                                 temp = ref_a[i][j] - ref_b[i][j];
-                                if(temp > (1 << (DATA_W - 1)) || temp < -(1 << (DATA_W -1))) begin
+                                if(temp > ((1 << (DATA_W - 1)) - 1) || temp < -(1 << (DATA_W -1))) begin
                                     overflow_expected = 1;
                                 end
                                 else begin
@@ -138,6 +149,7 @@ class scoreboard #(int N = 4, int DATA_W = 16);
     endfunction
 
     function bit check_overflow();
+        return overflow_expected;
     endfunction
 
     function bit compare_results();
@@ -154,6 +166,14 @@ class scoreboard #(int N = 4, int DATA_W = 16);
         end
         return 1;
     endfunction
+
+    function reset_state();
+    cfg_valid        = 1'b0;
+    start_received   = 1'b0;
+    overflow_expected = 1'b0;
+    elements_received = 0;
+    ref_a[N][N] = 0; ref_b[N][N] =0; ref_exp[N][N] = 0; dut_out[N][N] = 0;
+endfunction
 
     function void report();
         $display("===SCOREBOARD REPORT===");

@@ -2,7 +2,6 @@ class matrix_test #(int N=4, int DATA_W=16);
  
   bit            add_en       = 1;
   bit            sub_en       = 1;
-  bit            mul_en       = 0;
   bit            trans_en     = 0;
   bit            overflow_en  = 0;
   bit            flow_en      = 0;
@@ -15,13 +14,12 @@ class matrix_test #(int N=4, int DATA_W=16);
   int            num_pkts     = 10;
 
  
-  typedef enum bit [1:0] {ADD=0, SUB=1, MUL=2, TRANS=3} op_e;
+  typedef enum bit [1:0] {ADD=0, SUB=1, TRANS=2} op_e;
   rand op_e sel_op;
   constraint c_op_dist {
     sel_op dist {
       ADD    :/ add_en,
       SUB    :/ sub_en,
-      MUL    :/ mul_en,
       TRANS  :/ trans_en
     };
   }
@@ -38,7 +36,6 @@ class matrix_test #(int N=4, int DATA_W=16);
   function void parse_plusargs();
     void'($value$plusargs("add=%b",        add_en));
     void'($value$plusargs("sub=%b",        sub_en));
-    void'($value$plusargs("mul=%b",        mul_en));
     void'($value$plusargs("trans=%b",      trans_en));
     void'($value$plusargs("overflow=%b",   overflow_en));
     void'($value$plusargs("flow=%b",       flow_en));
@@ -55,7 +52,7 @@ class matrix_test #(int N=4, int DATA_W=16);
     end
 
     
-    if (!add_en && !sub_en && !mul_en && !trans_en && !overflow_en && !flow_en &&
+    if (!add_en && !sub_en && !trans_en && !overflow_en && !flow_en &&
         !neg_en && !reset_en && !seq_en && !apb_en && !param_en && !rand_en) begin
       add_en = 1; sub_en = 1; trans_en = 1;
     end
@@ -83,7 +80,7 @@ class matrix_test #(int N=4, int DATA_W=16);
   endtask
 
 
-  local task execute_op(op_e op, ref bit signed [DATA_W-1:0] a[N][N], 
+  protected task execute_op(op_e op, ref bit signed [DATA_W-1:0] a[N][N], 
                         ref bit signed [DATA_W-1:0] b[N][N],
                         ref bit signed [DATA_W-1:0] expected[N][N]);
 
@@ -133,8 +130,10 @@ class matrix_test #(int N=4, int DATA_W=16);
               a[i][j] = i*N + j + 1;
               expected[i][j] = a[j][i]; 
             end
-          b = '{default:0}; 
-        end
+          for (int i=0; i<N; i++)
+            for (int j=0; j<N; j++)
+                b[i][j] = 0;
+            end
       endcase
 
       execute_op(sel_op, a, b, expected);
@@ -342,7 +341,7 @@ for (int i=0; i<N; i++)
     txn.write = 1'b0;
     mb.put(txn);
     #20;
-    data = env.apb_vif.prdata;
+    data = txn.read_data;
   endtask
 
   protected task send_matrix_a(ref bit signed [DATA_W-1:0] mat[N][N]);
@@ -378,21 +377,49 @@ for (int i=0; i<N; i++)
     send_matrix_a(a);
   endtask
 
-  protected task wait_for_done();
-    #300;  
-  endtask
+protected task wait_for_done();
+  bit [31:0] status;
+  int timeout = 0;
+  int max_cycles = 2000;  
+  
+  $display("[TEST] ⏳ Waiting for DONE...");
+  
+  forever begin
+    
+    read_apb(8'h8, status);
+    
+    
+    if (status[0] == 1'b1) begin
+      $display("[TEST] ✅ DONE asserted (Status[3:0]=4'b%b)", status[3:0]);
+      break;  
+    end
+    #100;
+    if (++timeout > max_cycles) begin
+      $error("[TEST] ❌ TIMEOUT: DONE never asserted after %0d cycles", max_cycles);
+      $display("  Debug hints:");
+      $display("  - Check if START was written to 0x4");
+      $display("  - Check if matrices A/B were fully sent");
+      $display("  - Check env.apb_vif.rst_n = %b", env.apb_vif.rst_n);
+      break;
+    end
+  end
+endtask
 
   protected task read_and_compare(ref bit signed [DATA_W-1:0] expected[N][N]);
-
+    wait_for_done();
   endtask
 
   protected task check_status(bit expected_done, bit expected_busy, bit expected_overflow);
     bit [31:0] status;
-    #300;
+     if (expected_done) wait_for_done();
+    #50; 
+    
     read_apb(8'h8, status);
-    assert(status[0] == expected_done) else $error("DONE mismatch");
-    assert(status[1] == expected_busy) else $error("BUSY mismatch");
-    assert(status[2] == expected_overflow) else $error("OVERFLOW mismatch");
+    
+    if (status[0] !== expected_done)   $error("DONE mismatch: got %b, exp %b", status[0], expected_done);
+    if (status[1] !== expected_busy)   $error("BUSY mismatch: got %b, exp %b", status[1], expected_busy);
+    if (status[2] !== expected_overflow)$error("OVERFLOW mismatch: got %b, exp %b", status[2], expected_overflow);
+  
   endtask
 
   function void report();

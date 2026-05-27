@@ -8,6 +8,15 @@ module tb_top;
     axis_if #(.N(4), .DATA_W(16)) axis_b_vif();
     axis_if #(.N(4), .DATA_W(16)) axis_res_vif();
 
+    assign apb_vif.clk      = clk;
+    assign apb_vif.rst_n    = rst_n;
+    assign axis_a_vif.clk   = clk;
+    assign axis_a_vif.rst_n = rst_n;
+    assign axis_b_vif.clk   = clk;
+    assign axis_b_vif.rst_n = rst_n;
+    assign axis_res_vif.clk = clk;
+    assign axis_res_vif.rst_n = rst_n;
+
     matrix_calc #(
         .N                  (4                  ),
         .DATA_W             (16                 )
@@ -45,7 +54,14 @@ module tb_top;
     end
 
     initial begin
+        rst_n <= 1;
+        #50;
+        rst_n <= 0;
+        #300;
+        rst_n <= 1;
+        #10;
         env = new(apb_vif, axis_a_vif, axis_b_vif, axis_res_vif);
+        
         test_i = new(env);
         test_i.run();
         #200;

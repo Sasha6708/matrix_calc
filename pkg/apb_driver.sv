@@ -45,11 +45,13 @@ class apb_driver;
         apb_vif.paddr   <= addr;
         apb_vif.pwdata  <= data;        
         @(posedge apb_vif.clk);
-        apb_vif.penable <= 1'b1;       
+        apb_vif.penable <= 1'b1;  
+         wait(apb_vif.pready);     
         @(posedge apb_vif.clk);
         apb_vif.psel    <= 1'b0;
         apb_vif.penable <= 1'b0;
         apb_vif.pwrite  <= 1'b0;
+        
     endtask
     
     task apb_read(
@@ -62,7 +64,8 @@ class apb_driver;
         apb_vif.pwrite  <= 1'b0;
         apb_vif.paddr   <= addr;       
         @(posedge apb_vif.clk);
-        apb_vif.penable <= 1'b1;        
+        apb_vif.penable <= 1'b1; 
+        wait(apb_vif.pready);       
         rdata            = apb_vif.prdata;
         @(posedge apb_vif.clk);
         apb_vif.psel    <= 1'b0;
