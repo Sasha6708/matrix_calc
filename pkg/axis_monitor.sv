@@ -1,11 +1,11 @@
 class axis_monitor #(int N = 4, int DATA_W = 16);
 
-    virtual axis_if axis_vif;
+    virtual axis_if       axis_vif;
     sv_analysis_port_axis sap;
 
     function new(virtual axis_if axis_vif, sv_analysis_port_axis sap);
         this.axis_vif = axis_vif;
-        this.sap = sap;
+        this.sap      = sap;
     endfunction
 
     task run();
@@ -18,9 +18,9 @@ class axis_monitor #(int N = 4, int DATA_W = 16);
 
     local task capture_axis_tnx(axis_seq_item #(N, DATA_W) txn);
         static int valid_count = 0;
-        static int k = 0;
-        static int l = 0;
-        static bit collecting = 0;
+        static int k           = 0;
+        static int l           = 0;
+        static bit collecting  = 0;
         if(axis_vif.tvalid && axis_vif.tready) begin
                 if(!collecting) begin
                     collecting  = 1;
@@ -41,11 +41,11 @@ class axis_monitor #(int N = 4, int DATA_W = 16);
                 if(axis_vif.tlast) begin
                     txn.valid_count = valid_count;
                     sap.write(txn);
-                    collecting = 0;
+                    collecting      = 0;
                 end
             end
             if(!axis_vif.tvalid) begin
-                collecting = 0;
+                collecting      = 0;
             end
     endtask
 

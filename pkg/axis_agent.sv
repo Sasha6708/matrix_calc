@@ -31,4 +31,8 @@ class axis_agent #(int N = 4, int DATA_W = 16);
         join_none
     endtask
 
+    function mailbox #(axis_seq_item #(N, DATA_W)) get_driver_mailbox();
+        return seq_item_port;
+    endfunction
+
 endclass

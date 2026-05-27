@@ -3,10 +3,10 @@ module tb_top;
     bit clk;
     bit rst_n;
 
-    apb_if                        apb_vif(.clk(clk), .rst_n(rst_n));
-    axis_if #(.N(4), .DATA_W(16)) axis_a_vif(.clk(clk), .rst_n(rst_n));
-    axis_if #(.N(4), .DATA_W(16)) axis_b_vif(.clk(clk), .rst_n(rst_n));
-    axis_if #(.N(4), .DATA_W(16)) axis_res_vif(.clk(clk), .rst_n(rst_n));
+    apb_if                        apb_vif();
+    axis_if #(.N(4), .DATA_W(16)) axis_a_vif();
+    axis_if #(.N(4), .DATA_W(16)) axis_b_vif();
+    axis_if #(.N(4), .DATA_W(16)) axis_res_vif();
 
     matrix_calc #(
         .N                  (4                  ),
@@ -37,6 +37,7 @@ module tb_top;
     );
 
     matrix_env #(.N(4), .DATA_W(16)) env;
+    matrix_test #(.N(4), .DATA_W(16)) test_i;
 
     initial begin
         clk <= 0;
@@ -44,13 +45,9 @@ module tb_top;
     end
 
     initial begin
-        rst_n <= 0;
-        #100 
-        rst_n <= 1;
-        #20
         env = new(apb_vif, axis_a_vif, axis_b_vif, axis_res_vif);
-        env.build();
-        env.run();
+        test_i = new(env);
+        test_i.run();
         #200;
         $display("Testbench completed");
         $finish;
