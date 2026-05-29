@@ -1,4 +1,4 @@
-class sv_analysis_port_axis;
+class sv_analysis_port_axis #(int N = 4, int DATA_W = 16);
 
   local mailbox #(axis_seq_item #(N, DATA_W)) subscribers[$];
 
@@ -9,7 +9,7 @@ class sv_analysis_port_axis;
   task write(axis_seq_item #(N, DATA_W) item);
     axis_seq_item cloned;
     foreach (subscribers[i]) begin
-      void'(item.clone(cloned));
+      cloned = item.clone();
       subscribers[i].put(cloned);
     end
   endtask

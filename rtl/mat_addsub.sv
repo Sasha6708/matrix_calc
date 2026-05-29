@@ -37,6 +37,7 @@ module mat_addsub#(
 
     //OR all overflow       
     always_comb begin
+        mat_result = '{default: 16'sh0};
         overflow = 1'b0;
         for (int k = 0; k < N; k++) begin
             for (int m = 0; m < N; m++) begin

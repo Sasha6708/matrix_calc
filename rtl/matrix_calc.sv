@@ -32,33 +32,37 @@ module matrix_calc #(
     output logic signed [DATA_W-1:0] m_axis_res_tdata,
     output logic                     m_axis_res_tvalid,
     output logic                     m_axis_res_tlast,
-    input  logic                     m_axis_res_tready
+    input  logic                     m_axis_res_tready,
+
+    output debug_fsm_state
 );
 
 //APB_CSR signals
-logic done_i, busy_i, overflow_i, singular_i;
+logic done_i, busy_i, overflow_i, singular_i, start;
 logic        [1: 0] op;
+logic start_cmd;
 
 //AXIS_RX signals
-logic flush, recv_done_a, recv_done_b
+logic flush, recv_done_a, recv_done_b;
 //Buffers
 logic signed [DATA_W - 1: 0]                matrix_a [N][N];
 logic signed [DATA_W - 1: 0]                matrix_b [N][N];
 
 //Computing units
-logic addsub_overflow;
+logic add, sub, addsub_overflow;
 logic signed [DATA_W - 1: 0]    matrix_result_addsub [N][N];
 logic signed [DATA_W - 1: 0] matrix_result_transpose [N][N];
 
 //AXIS_TX signals
-logic send_tx;
+logic send_tx, done_tx;
+logic done_hold;
 
 //OTHER
 logic need_matric_b;
 logic signed [DATA_W - 1: 0]              mux_result [N][N];
 
 //Define FSM
-typedef enum logic [2:0] = { IDLE       = 3'b000,
+typedef enum logic [2:0]   { IDLE       = 3'b000,
                              RECV       = 3'b001,
                              WAIT_START = 3'b010,
                              COMPUTE    = 3'b011,
@@ -89,7 +93,7 @@ apb_csr #(.N                (N                      ),
 );
 axis_rx #(.N                (N                      ),
           .DATA_W           (DATA_W                 )
-) axis_rx_dut (
+) axis_rx_dut1 (
           .clk              (clk                    ),
           .rst_n            (rst_n                  ),
           .s_tdata          (s_axis_a_tdata         ),
@@ -102,7 +106,7 @@ axis_rx #(.N                (N                      ),
 );
 axis_rx #(.N                (N                      ),
           .DATA_W           (DATA_W                 )
-) axis_rx_dut (
+) axis_rx_dut2 (
           .clk              (clk                    ),
           .rst_n            (rst_n                  ),
           .s_tdata          (s_axis_b_tdata         ),
@@ -127,7 +131,7 @@ mat_addsub #(
 mat_transpose #(
           .N                (N                      ),
           .DATA_W           (DATA_W                 )
-) (
+) mat_transpose_dut (
           .matrix_in        (matrix_a               ),
           .matrix_out       (matrix_result_transpose)
 );
@@ -153,16 +157,14 @@ axis_tx #(
 always_comb begin
     add = 1'b0;
     sub = 1'b0;
-    if (op[0] == 1'b0) begin
-        add = 1'b1;
-    end
-    else if (op[0] == 1'b1) begin
-        sub = 1'b1;
-    end
+    add = (op == 2'b00); // 1 только для ADD
+    sub = (op == 2'b01); // 1 только для SUB
+   
 end
 
 //Choose the way to AXIS_TX
 always_comb begin
+    mux_result = '{default: '0};
     if (op[1] == 1'b0) begin
         mux_result = matrix_result_addsub;
     end
@@ -175,6 +177,16 @@ end
 assign need_matric_b = (op[1] == 1'b0);
 assign overflow_i = addsub_overflow;
 
+
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n) 
+    start_cmd <= 1'b0;
+  else if (start)         
+    start_cmd <= 1'b1;
+  else if (state == COMPUTE) 
+    start_cmd <= 1'b0;
+end
+
 //Logic FSM
 always_comb begin
     next_state = state;
@@ -182,11 +194,13 @@ always_comb begin
         IDLE:   if (s_axis_a_tvalid) begin 
                     next_state = RECV;
                 end
-        RECV:   if (need_matric_b && recv_done_a && recv_done_b 
-                || !need_matric_b && recv_done_a               ) begin
-                    next_state = WAIT_START;
-                end
-        WAIT_START: if (start) begin 
+         RECV:
+
+            if (recv_done_a && recv_done_b) begin
+                next_state = WAIT_START;
+            end
+        
+        WAIT_START: if (start_cmd) begin 
                     next_state = COMPUTE;
                     end
         COMPUTE:    next_state = SEND;
@@ -207,28 +221,26 @@ always_ff @(posedge clk or negedge rst_n) begin
     end
 end
 
-//Decribe the flush
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
-        flush <= 1'b0;
-    end
-    else if (state == IDLE) begin
-        flush <= 1'b1;
-    end
-    else begin
-        flush <= 1'b0;
-    end
-end
 
-//Logic AXI-STREAM ready
-assign s_axis_a_tready = (state == RECV);
-assign s_axis_b_tready = (state == RECV) && need_matric_b;
+always_ff @(posedge clk or negedge rst_n) begin
+  if (!rst_n) 
+    done_hold <= 1'b0;
+  else if (state == DONE_WAIT) 
+    done_hold <= 1'b1;  
+  else if (s_axis_a_tvalid) 
+    done_hold <= 1'b0;  
+end
+assign done_i = done_hold;
+//Decribe the flush
+assign flush = (state == IDLE) & ~s_axis_a_tvalid;
 
 //Control signal AXIS_TX
 assign send_tx         = (state == SEND);
 
 //Flags for APB_CSR
 assign busy_i          = (state != IDLE) && (state != DONE_WAIT);
-assign done_i          = (state == DONE_WAIT);
+assign singular_i = 1'b0;
+assign debug_fsm_state = state;
+
 
 endmodule

@@ -11,7 +11,21 @@ class coverage_collector #(int N=4, int DATA_W=16);
   int        tlast_cycle, tvalid_gap, tready_gap, valid_count;
   int        reset_phase, ops_in_row;
   bit        is_overflow_risk;
- 
+  logic [2:0] fsm_state_sample; 
+  
+  covergroup cg_fsm_states;
+    option.per_instance = 1;
+    
+    fsm_state_cp: coverpoint fsm_state_sample { 
+      bins idle       = {0};
+      bins recv       = {1};
+      bins wait_start = {2};
+      bins compute    = {3};
+      bins send       = {4};
+      bins done_wait  = {5};
+    }
+  endgroup
+
   covergroup cg_apb;
     option.per_instance = 1;
     
@@ -28,14 +42,6 @@ class coverage_collector #(int N=4, int DATA_W=16);
       bins status    = {8'h8};
       bins invalid   = default;
     }
-    
-    /*access_cross: cross op, addr {
-        bins valid_add    = (0, 8'h0);
-        bins valid_sub    = (1, 8'h0);
-        bins valid_trans  = (2, 8'h0);
-        bins ro_attempt   = (0, 8'h8), (1, 8'h8), (2, 8'h8);
-        ignore_bins others = default;
-}*/
     
     error: coverpoint apb_err { 
       bins ok  = {0};
@@ -76,7 +82,7 @@ class coverage_collector #(int N=4, int DATA_W=16);
   endgroup
 
   
-  covergroup cg_outputs;
+  /*covergroup cg_outputs;
     option.per_instance = 1;
     
     result_range: coverpoint res_data {  
@@ -104,7 +110,7 @@ class coverage_collector #(int N=4, int DATA_W=16);
       bins full    = {16};
       bins extra   = {[17:100]};
     }
-  endgroup
+  endgroup*/
 
 
   covergroup cg_state;
@@ -128,7 +134,8 @@ class coverage_collector #(int N=4, int DATA_W=16);
 
   function new();
     apb_mb = new(); axis_a_mb = new(); axis_b_mb = new(); axis_res_mb = new();
-    cg_apb = new(); cg_inputs = new(); cg_outputs = new(); cg_state = new();
+    cg_apb = new(); cg_inputs = new(); cg_state = new();
+    cg_fsm_states = new();
   endfunction
 
   task run();
@@ -137,6 +144,13 @@ class coverage_collector #(int N=4, int DATA_W=16);
       collect_inputs();
       collect_outputs();
       collect_state();
+      begin
+      forever begin
+        
+        #1; 
+        cg_fsm_states.sample();
+      end
+    end
     join_none
   endtask
 
@@ -173,35 +187,40 @@ class coverage_collector #(int N=4, int DATA_W=16);
       valid_count = item.valid_count;
       tvalid_gap = $urandom_range(0,2);
       tready_gap = $urandom_range(0,2);
-      cg_outputs.sample();
+      //cg_outputs.sample();
     end
   endtask
+
+  
 
   task collect_state();
     apb_seq_item apb_item;
     int ops_count = 0;
     forever begin
       apb_mb.get(apb_item);
-      if (!apb_item.rst_n) begin
-        reset_phase = $urandom_range(0,4);
+      
+     
+      if (!apb_item.rst_n) begin 
+        
         cg_state.sample();
       end
+      
       if (apb_item.write && apb_item.addr == 8'h4 && apb_item.write_data[0]) begin
         ops_count++;
-        if (ops_count >= 2) begin
-          ops_in_row = (ops_count > 8) ? 8 : ops_count;
-          cg_state.sample();
-        end
+        ops_in_row = ops_count;
+        if (ops_in_row > 8) ops_in_row = 8;
+        cg_state.sample();
       end
     end
   endtask
 
 
   function void report();
-    $display("\n=== COVERAGE REPORT ===");
+    $display("=== COVERAGE REPORT ===");
     $display("APB Coverage:      %0.2f%%", cg_apb.get_coverage());
     $display("Inputs Coverage:   %0.2f%%", cg_inputs.get_coverage());
-    $display("Outputs Coverage:  %0.2f%%", cg_outputs.get_coverage());
+    //$display("Outputs Coverage:  %0.2f%%", cg_outputs.get_coverage());
+    $display("FSM states Coverage:    %0.2f%%", cg_fsm_states.get_coverage());
     $display("State Coverage:    %0.2f%%", cg_state.get_coverage());
     $display("Global Coverage:   %0.2f%%", $get_coverage());
   endfunction

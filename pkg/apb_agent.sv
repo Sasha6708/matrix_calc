@@ -8,6 +8,9 @@ class apb_agent;
     mailbox #(apb_seq_item) seq_item_port;
 
     function new(virtual apb_if apb_vif, bit is_active = 1);
+ 
+    this.apb_vif = apb_vif;
+    this.is_active = is_active;
         seq_item_port = new();
         sap           = new();
         a_monitor     = new(apb_vif, sap);

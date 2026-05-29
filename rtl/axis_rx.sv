@@ -22,16 +22,11 @@ module axis_rx #(
     logic buf_full;
 
     assign buf_full = (elemr_cnt == TOTAL);
-    assign s_tready = (~flush && ~buf_full);
+    assign s_tready = ~buf_full;
+    
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            elemr_cnt   <= '0;
-            recv_done   <= 1'b0;
-            row         <= '0;
-            col         <= '0;
-        end
-        else if (flush) begin
             elemr_cnt   <= '0;
             recv_done   <= 1'b0;
             row         <= '0;
@@ -53,9 +48,16 @@ module axis_rx #(
                 recv_done   <= 1'b1;
             end
         end
-        else begin
-            recv_done <= 1'b0;
+        else if (flush) begin
+            elemr_cnt   <= '0;
+            recv_done   <= 1'b0;
+            row         <= '0;
+            col         <= '0;
         end
+        else begin
+                recv_done <= 0;
+        end
+        
     end
 
 endmodule

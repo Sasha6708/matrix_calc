@@ -19,12 +19,12 @@ class axis_seq_item #(int N = 4, int DATA_W = 16);
         valid_count = N * N;   
     endfunction
 
-    function axis_seq_item clone(output axis_seq_item cloned);
-        cloned             = new();
-        cloned.tnx_id      = this.tnx_id;
-        cloned.tlast       = this.tlast;
-        cloned.valid_count = this.valid_count;
-        cloned.matrix      = this.matrix;
+    function axis_seq_item #(N, DATA_W) clone();
+        clone             = new();
+        clone.tnx_id      = this.tnx_id;
+        clone.tlast       = this.tlast;
+        clone.valid_count = this.valid_count;
+        clone.matrix      = this.matrix;
     endfunction
 
 endclass

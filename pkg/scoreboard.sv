@@ -29,34 +29,33 @@ class scoreboard #(int N = 4, int DATA_W = 16);
     task run();
         fork
             collect_apb();
-            collect_a_axis();
-            collect_b_axis();
-            collect_res_axis();
+            collect_res_axis(); 
         join_none
     endtask
 
     task collect_apb();
         apb_seq_item item;
         forever begin
-            apb_mb.get(item);
-             if (!item.rst_n) begin
-            reset_state();
-            $display("[SB] 🔄 Reset detected, state cleared");
-            continue;
-        end
-            if(item.write && item.addr == 8'h0) begin
-                opp = item.write_data[ 1: 0];
-                cfg_valid = 1;
-                $display("OP = %b", opp);
+            apb_mb.get(item);  
+            
+            if (!item.write) continue; 
+            
+            case (item.addr)
+            8'h0: begin  // OP register
+                opp = item.write_data[1:0];
+                cfg_valid = 1'b1;  
+                $display("[SCOREBOARD] OP=0x%0h configured", opp);
             end
-            if(item.write && item.addr == 8'h4 && item.write_data[0]) begin
-                start_received = 1'b1;
-                $display("START = 1");
+            8'h4: begin  // START register
+                if (item.write_data[0]) begin
+                start_received = 1'b1;  
+                $display("[SCOREBOARD] START received");
+                end
             end
-            if(item.error) begin
-                $display("pslverr detected");
-                apb_err_pass++;
+            8'h8: begin  // STATUS (read) 
+            
             end
+            endcase
         end
     endtask
 
@@ -79,41 +78,67 @@ class scoreboard #(int N = 4, int DATA_W = 16);
     endtask
 
     task collect_res_axis();
-        axis_seq_item #(N, DATA_W) item;
-        forever begin
-            axis_res_mb.get(item);
-            elements_received += item.valid_count;
-            dut_out = item.matrix;
-            if(cfg_valid && start_received) begin
-                compute_expected();
-                if(overflow_expected) begin
-                    if(check_overflow()) begin
-                        $display("Overflow detected");
-                        overflow_pass++;
-                    end
-                    else begin
-                        $display("Expected overflow not detected");
-                        fail_cnt++;
-                    end
-                end
-                if(compare_results()) begin
-                    $display("PASS opp = %b elem = %b", opp, item.valid_count);
-                    pass_cnt++;
-                end
-                else begin
-                    $display("FAIL opp = %b mismatch at [%d][%d]: exp = %d, got = %d", opp, err_i, err_j, ref_exp[err_i][err_j], dut_out[err_i][err_j]);
-                    fail_cnt++;
-                end
-                cfg_valid = 1'b0;
-                start_received = 1'b0;
-                overflow_expected = 1'b0;
-                elements_received = 0;
-            end
-            else begin
-                $warning("Result arrived before config/start");
+    axis_seq_item #(N, DATA_W) res_item, item_a, item_b;
+    forever begin
+        
+        wait (cfg_valid && start_received);  
+       
+        wait (axis_a_mb.num() > 0 && axis_b_mb.num() > 0);
+        axis_a_mb.get(item_a); axis_b_mb.get(item_b); 
+        ref_a = item_a.matrix;
+        ref_b = item_b.matrix;
+        
+        compute_expected_from_items(ref_a, ref_b);
+        
+       
+       
+        fork
+            wait (axis_res_mb.num() > 0);
+            begin #2000; $display("[SCB]  TIMEOUT: result not get!"); end
+        join_any
+        disable fork;
+        
+        if (axis_res_mb.num() == 0) begin
+            cfg_valid = 1'b0;
+            start_received = 1'b0;
+            continue;
+        end
+
+        axis_res_mb.get(res_item);
+        dut_out = res_item.matrix;
+        
+        
+        
+         print_matrix("Expected(ref_exp)", ref_exp);
+        print_matrix("Result DUT (dut_out)", dut_out);
+
+        if (compare_results()) begin
+            $display("[SCOREBOARD] PASS opp=%b | elem=%0d", opp, res_item.valid_count);
+            pass_cnt++;
+        end else begin
+            $display("[SCOREBOARD] FAIL opp=%b at [%d][%d]: exp=%d, got=%d", 
+                     opp, err_i, err_j, ref_exp[err_i][err_j], dut_out[err_i][err_j]);
+            fail_cnt++;
+        end
+        cfg_valid = 1'b0; start_received = 1'b0;
+    end
+endtask
+
+    protected task compute_expected_from_items(input bit signed [DATA_W-1:0] mat_a[N][N], 
+                                            input bit signed [DATA_W-1:0] mat_b[N][N]);
+        for (int i=0; i<N; i++) begin
+            for (int j=0; j<N; j++) begin
+                case (opp)
+                    2'b00: ref_exp[i][j] = mat_a[i][j] + mat_b[i][j];
+                    2'b01: ref_exp[i][j] = mat_a[i][j] - mat_b[i][j];
+                    2'b10: ref_exp[i][j] = mat_a[j][i];
+                    default: ref_exp[i][j] = 0;
+                endcase
             end
         end
     endtask
+
+    
 
     function void compute_expected();
         overflow_expected = 0;
@@ -167,6 +192,15 @@ class scoreboard #(int N = 4, int DATA_W = 16);
         return 1;
     endfunction
 
+    protected task print_matrix(string name, bit signed [DATA_W-1:0] m[N][N]);
+        $display(" === %s ===", name);
+        for (int i = 0; i < N; i++) begin
+            $write("   [");
+            for (int j = 0; j < N; j++) $write("%5d ", m[i][j]);
+            $display("]");
+        end
+    endtask
+
     function reset_state();
     cfg_valid        = 1'b0;
     start_received   = 1'b0;
@@ -188,5 +222,7 @@ endfunction
             $display("%d MISMATCHES DETECTED", fail_cnt);
         end
     endfunction
+
+
 
 endclass

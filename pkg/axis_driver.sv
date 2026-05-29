@@ -12,7 +12,6 @@ class axis_driver #(int N = 4, int DATA_W = 16);
         axis_seq_item #(N, DATA_W) txn;
         reset();
         forever begin
-            @(posedge axis_vif.clk);
             seq_item_port.get(txn);
             drive_matrix(txn);
         end
@@ -27,15 +26,12 @@ class axis_driver #(int N = 4, int DATA_W = 16);
     local task drive_matrix(axis_seq_item #(N, DATA_W) txn);
         int idx = 0;
         for(int i = 0; i < N; i++) begin
-            for(int j = 0; j < N; j++) begin
+            for(int j = 0; j < N; j++) begin              
                 @(posedge axis_vif.clk);
                 axis_vif.tvalid <= 1;
                 axis_vif.tdata  <= txn.matrix[i][j];
                 axis_vif.tlast  <= (idx == N * N - 1) ? txn.tlast : 0;
                 idx++;
-                while(!axis_vif.tready) begin
-                    @(posedge axis_vif.clk);
-                end
             end
         end
         @(posedge axis_vif.clk);

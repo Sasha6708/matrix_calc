@@ -3,6 +3,10 @@ class axis_monitor #(int N = 4, int DATA_W = 16);
     virtual axis_if axis_vif;
     sv_analysis_port_axis sap;
     axis_seq_item #(N, DATA_W) txn;
+    int valid_count = 0;
+    int k = 0;
+    int l = 0;
+    bit collecting = 0;
 
     function new(virtual axis_if axis_vif, sv_analysis_port_axis sap);
         this.axis_vif = axis_vif;
@@ -10,18 +14,13 @@ class axis_monitor #(int N = 4, int DATA_W = 16);
     endfunction
 
     task run();
-        //axis_seq_item #(N, DATA_W) txn;
         forever begin
             @(posedge axis_vif.clk);
             capture_axis_tnx();
         end
     endtask
 
-    local task capture_axis_tnx();
-        static int valid_count = 0;
-        static int k = 0;
-        static int l = 0;
-        static bit collecting = 0;
+    local task capture_axis_tnx();     
         if(axis_vif.tvalid && axis_vif.tready) begin
                 if(!collecting) begin
                     collecting  = 1;
@@ -51,6 +50,5 @@ class axis_monitor #(int N = 4, int DATA_W = 16);
                 collecting      = 0;
             end
     endtask
-
 
 endclass

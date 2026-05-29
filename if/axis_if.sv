@@ -3,7 +3,7 @@ interface axis_if #(
     int DATA_W = 16
     );
     
-    bit clk, rst_n;
+    logic clk, rst_n;
     logic [DATA_W - 1: 0] tdata;
     logic                 tvalid;
     logic                 tready;

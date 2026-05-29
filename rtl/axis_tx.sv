@@ -6,9 +6,9 @@ module axis_tx #(
     input  logic                     rst_n,
     input  logic                     send,
     input  logic                     m_tready,
-    input  logic                     is_scalar,
+    //input  logic                     is_scalar,
     input  logic signed [DATA_W-1:0] mat_in [N][N],
-    input  logic signed [DATA_W-1:0] scalar_in,
+    //input  logic signed [DATA_W-1:0] scalar_in,
     output logic signed [DATA_W-1:0] m_tdata,
     output logic                     m_tvalid,
     output logic                     m_tlast,
@@ -27,7 +27,7 @@ module axis_tx #(
                         
     state_t next_state, state;
 
-    always_ff @(posedge clk) begin
+    always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             state     <= IDLE;
             elemt_cnt <= '0;
@@ -39,14 +39,15 @@ module axis_tx #(
             state <= next_state;
 
             //Reset before send
-            if (state == IDLE && send) begin
+            if (state == IDLE && next_state == SEND) begin
                 elemt_cnt <= '0;
                 row       <= '0;
                 col       <= '0;
+                done_tx   <= 1'b0;
             end
 
             //Write by handshake with 2 counters
-            else if(m_tvalid && m_tready) begin
+            else if(state == SEND && m_tvalid && m_tready) begin
                 elemt_cnt <= elemt_cnt + 1;
                 if (col == N - 1) begin
                     col <= '0;
